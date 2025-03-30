@@ -8,7 +8,8 @@ def create_usd_price_column(
         "MEXICO": 20.5,
         "ARGENTINA": 1100.00,
         "COLOMBIA": 4200.00,
-        "PERU": 3.70
+        "PERU": 3.70,
+        "CHILE": 950,
     }) -> pd.DataFrame:
     """
     Crea la columna 'precio_usd' a partir de la columna 'Precio' y el país (site_id).
