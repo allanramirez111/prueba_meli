@@ -47,7 +47,7 @@ def transform_data(
     df = pd.read_csv(path)
 
     # 2) Convertir precio a USD:
-    df = _create_usd_price_column(df, exchange_rates)
+    df = create_usd_price_column(df, exchange_rates)
 
     # 3) Identificar columnas numéricas y categóricas.
     #    - Asumimos 'Precio', 'precio_usd' y 'Score' pueden ser numéricas,
@@ -66,9 +66,16 @@ def transform_data(
     return df, numeric_cols, categorical_cols
 
 
-def _create_usd_price_column(
+def create_usd_price_column(
     df: pd.DataFrame,
-    exchange_rates: Dict[str, float]
+    exchange_rates: Dict[str, float] = {
+            "BRASIL": 5.9,
+            "MEXICO": 20.5,
+            "ARGENTINA": 1100.0,
+            "COLOMBIA": 4200.0,
+            "PERU": 3.70,
+            "CHILE": 950.0
+        }
 ) -> pd.DataFrame:
     """
     Crea la columna 'precio_usd' a partir de la columna 'Precio' y el país (site_id).

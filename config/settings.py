@@ -1,9 +1,8 @@
 # config/settings.py
 
 """
-Archivo de configuración para el proyecto.
-Contiene constantes y configuraciones globales.
+Módulo de configuración global.
 """
 
-# Ruta relativa del archivo CSV con los datos (ten en cuenta que los precios están en moneda local)
+# Ajusta la ruta según tu archivo CSV real
 DATA_PATH = "data/base.csv"
