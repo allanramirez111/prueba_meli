@@ -18,12 +18,10 @@ Este repositorio contiene un **dashboard interactivo en Streamlit** para explora
 - **Clasificación de Fakes**  
   Entrenamiento rápido de modelos clasificadores (Logistic Regression, Random Forest, XGBoost) para predecir productos fake. Se muestran métricas e **importancia de variables agregadas**.
 
-- **Optimización de Filtros (Frontera Eficiente)**  
+- **Optimización de Filtros**  
   Simulación exhaustiva de filtros (categorías múltiples y puntos de corte numéricos) para encontrar subconjuntos que:
   - Minimicen la tasa de fakes.
   - Maximizando la cobertura de la base.
-  - Calculando la **frontera eficiente** y visualización de los mejores filtros.
-
 ---
 
 ## 📁 Estructura del Proyecto
@@ -51,7 +49,7 @@ Este repositorio contiene un **dashboard interactivo en Streamlit** para explora
 │   ├── pca_analysis.py        # PCA mixto con codificación de variables
 │   ├── cluster_analysis.py    # Clustering y métricas de cada cluster
 │   ├── classification.py      # Clasificación de fakes y evaluación de importancia
-│   ├── optimizer.py           # Módulo de optimización de filtros y frontera eficiente
+│   ├── optimizer.py           # Módulo de cálculo de filtros
 │   └── visualizations.py      # Visualizaciones gráficas (PCA, clusters, etc.)
 ```
 
@@ -83,7 +81,7 @@ streamlit run app.py
   - Regresión logística
   - Random Forest
   - XGBoost
-- **Optimización combinatoria** de filtros (frontera eficiente)
+- **Optimización combinatoria** de filtros
 - Paralelización con **joblib** para mejorar el rendimiento
 
 ---

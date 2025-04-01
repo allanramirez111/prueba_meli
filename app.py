@@ -296,7 +296,6 @@ def show_optimization_tab(df, numeric_cols, categorical_cols):
         build_cat_subsets,
         find_numeric_cutpoints,
         generate_combinations_and_evaluate,
-        efficient_frontier
     )
     import matplotlib.pyplot as plt
     import seaborn as sns
@@ -306,9 +305,7 @@ def show_optimization_tab(df, numeric_cols, categorical_cols):
     st.write("""
     Selecciona variables categóricas y numéricas, junto con un porcentaje mínimo
     de la base que se desee conservar. Se generarán todas las combinaciones de subsets
-    de categorías (potencia) y puntos de corte numéricos (determinados por árboles de
-    decisión), se calculará la cobertura y el porcentaje de fakes resultante,
-    y se mostrará la frontera eficiente.
+    de categorías y puntos de corte numéricos , se calculará la cobertura y el porcentaje de fakes resultante.
     """)
 
     selected_cat = st.multiselect("Variables Categóricas", categorical_cols, ["site_id"])
@@ -339,16 +336,9 @@ def show_optimization_tab(df, numeric_cols, categorical_cols):
         st.write(f"### Resultados de {len(df_res)} combinaciones")
         st.dataframe(df_res.sort_values("Coverage", ascending=False))
 
-        # 4) Frontera eficiente
-        df_front = efficient_frontier(df_res, coverage_col="Coverage", fake_col="pFake")
-        st.write("### Frontera Eficiente")
-        st.dataframe(df_front)
-
-        # 5) Graficar scatter coverage vs pFake
+        # 4) Graficar scatter coverage vs pFake
         fig, ax = plt.subplots(figsize=(8,5))
         sns.scatterplot(data=df_res, x="Coverage", y="pFake", alpha=0.4, color="gray", ax=ax)
-        # resaltar la frontera en rojo
-        sns.scatterplot(data=df_front, x="Coverage", y="pFake", color="red", s=80, ax=ax)
 
         ax.set_xlabel("Cobertura (%)")
         ax.set_ylabel("% Fake")

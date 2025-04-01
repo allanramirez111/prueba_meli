@@ -206,35 +206,3 @@ def generate_combinations_and_evaluate(
     valid_results = [res for res in results_list if res is not None]
     df_res = pd.DataFrame(valid_results)
     return df_res
-
-
-def efficient_frontier(
-    df_res: pd.DataFrame,
-    coverage_col: str = "Coverage",
-    fake_col: str = "pFake"
-) -> pd.DataFrame:
-    """
-    Calcula la frontera eficiente (Pareto) a partir de un DataFrame que contiene
-    'Coverage' y 'pFake' para cada combinación de filtros. Se ordena por cobertura
-    descendente y porcentaje de Fake ascendente, y se retiene cada punto que
-    representa un nuevo mínimo en pFake.
-
-    Args:
-        df_res (pd.DataFrame): DataFrame con columnas 'Coverage' y 'pFake'.
-        coverage_col (str): Nombre de la columna de cobertura.
-        fake_col (str): Nombre de la columna de porcentaje de Fake.
-
-    Returns:
-        pd.DataFrame: DataFrame con las combinaciones que forman la frontera eficiente.
-    """
-    df_sorted = df_res.sort_values(by=[coverage_col, fake_col], ascending=[False, True]).reset_index(drop=True)
-    frontier_idx = []
-    best_fake = float('inf')
-    for i, row in df_sorted.iterrows():
-        if row[fake_col] < best_fake:
-            frontier_idx.append(i)
-            best_fake = row[fake_col]
-    df_front = df_sorted.loc[frontier_idx].copy()
-    df_front.sort_values(by=[coverage_col, fake_col], ascending=[False, True], inplace=True)
-    df_front.reset_index(drop=True, inplace=True)
-    return df_front
