@@ -35,14 +35,12 @@ def main():
         tab_flags,
         tab_rels,
         tab_pca,
-        tab_class,
-        # tab_opt
+        tab_class
         ) = st.tabs([
         "Análisis de Banderas",
         "Relaciones / Correlaciones",
         "PCA + Clustering",
         "Clasificación",
-        # "Optimización" 
     ])
 
     with tab_flags:
@@ -56,10 +54,6 @@ def main():
 
     with tab_class:
         show_classification_tab(df, numeric_cols, categorical_cols)
-
-    # with tab_opt:
-    #     show_optimization_tab(df, numeric_cols, categorical_cols)
-
 
 
 def show_flags_tab(df, numeric_cols, categorical_cols):
@@ -286,69 +280,6 @@ def show_classification_tab(df, numeric_cols, categorical_cols):
 
         except ValueError as e:
             st.error(f"Error al entrenar modelo: {e}")
-
-def show_optimization_tab(df, numeric_cols, categorical_cols):
-    """
-    Pestaña de Optimización donde:
-      1) Se eligen variables categóricas y numéricas.
-      2) Se elige un porcentaje mínimo de cobertura (min_coverage).
-      3) Se generan TODAS las subsets (powerset) de categorías, y los umbrales
-         para las numéricas.
-      4) Se cruzan y se filtra la base, se calcula coverage y pFake.
-      5) Se determina la frontera eficiente y se grafican los resultados.
-    """
-    from src.optimizer import (
-        build_cat_subsets,
-        find_numeric_cutpoints,
-        generate_combinations_and_evaluate,
-    )
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-
-    st.header("Optimización de Filtros con Múltiples Categorías")
-
-    st.write("""
-    Selecciona variables categóricas y numéricas, junto con un porcentaje mínimo
-    de la base que se desee conservar. Se generarán todas las combinaciones de subsets
-    de categorías y puntos de corte numéricos , se calculará la cobertura y el porcentaje de fakes resultante.
-    """)
-
-    selected_cat = st.multiselect("Variables Categóricas", categorical_cols, ["site_id"])
-    selected_num = st.multiselect("Variables Numéricas", numeric_cols, ["precio_usd"])
-
-    min_cov = st.slider("Porcentaje Mínimo de Cobertura", 0.0, 1.0, 0.5, 0.05)
-
-    run_opt_btn = st.button("Ejecutar Optimización")
-
-    if run_opt_btn:
-        if not selected_cat and not selected_num:
-            st.error("Selecciona al menos una variable categórica o numérica.")
-            return
-
-        # 1) Generar subsets para las variables cat
-        cat_subsets_dict = build_cat_subsets(df, selected_cat)
-
-        # 2) Determinar puntos de corte para variables num
-        #    (árbol con max_leaf_nodes=3, se pueden cambiar)
-        cutpoints_dict = find_numeric_cutpoints(df, selected_num, max_leaf_nodes=3)
-
-        # 3) Generar combos y evaluar
-        df_res = generate_combinations_and_evaluate(df, cat_subsets_dict, cutpoints_dict, min_cov)
-        if df_res.empty:
-            st.warning("No hay combinaciones que cumplan con la cobertura mínima.")
-            return
-
-        st.write(f"### Resultados de {len(df_res)} combinaciones")
-        st.dataframe(df_res.sort_values("Coverage", ascending=False))
-
-        # 4) Graficar scatter coverage vs pFake
-        fig, ax = plt.subplots(figsize=(8,5))
-        sns.scatterplot(data=df_res, x="Coverage", y="pFake", alpha=0.4, color="gray", ax=ax)
-
-        ax.set_xlabel("Cobertura (%)")
-        ax.set_ylabel("% Fake")
-        ax.set_title("Cobertura vs. %Fake")
-        st.pyplot(fig)
 
 
 if __name__ == "__main__":
