@@ -31,12 +31,18 @@ def main():
     df, numeric_cols, categorical_cols = load_dataset()
 
     # Cinco pestañas
-    tab_flags, tab_rels, tab_pca, tab_class, tab_opt = st.tabs([
+    (
+        tab_flags,
+        tab_rels,
+        tab_pca,
+        tab_class,
+        # tab_opt
+        ) = st.tabs([
         "Análisis de Banderas",
         "Relaciones / Correlaciones",
         "PCA + Clustering",
         "Clasificación",
-        "Optimización"  # <- nueva
+        # "Optimización" 
     ])
 
     with tab_flags:
@@ -51,9 +57,8 @@ def main():
     with tab_class:
         show_classification_tab(df, numeric_cols, categorical_cols)
 
-    # NUEVA PESTAÑA: OPTIMIZACIÓN
-    with tab_opt:
-        show_optimization_tab(df, numeric_cols, categorical_cols)
+    # with tab_opt:
+    #     show_optimization_tab(df, numeric_cols, categorical_cols)
 
 
 
@@ -342,7 +347,7 @@ def show_optimization_tab(df, numeric_cols, categorical_cols):
 
         ax.set_xlabel("Cobertura (%)")
         ax.set_ylabel("% Fake")
-        ax.set_title("Cobertura vs. %Fake (Frontera en rojo)")
+        ax.set_title("Cobertura vs. %Fake")
         st.pyplot(fig)
 
 

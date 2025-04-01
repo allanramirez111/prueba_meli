@@ -19,9 +19,8 @@ Este repositorio contiene un **dashboard interactivo en Streamlit** para explora
   Entrenamiento rápido de modelos clasificadores (Logistic Regression, Random Forest, XGBoost) para predecir productos fake. Se muestran métricas e **importancia de variables agregadas**.
 
 - **Optimización de Filtros**  
-  Simulación exhaustiva de filtros (categorías múltiples y puntos de corte numéricos) para encontrar subconjuntos que:
-  - Minimicen la tasa de fakes.
-  - Maximizando la cobertura de la base.
+  Simulación exhaustiva de filtros (categorías múltiples y puntos de corte numéricos) para evaluar la tasa de fakes y la cobertura de la base en distintos subconjuntos.
+
 ---
 
 ## 📁 Estructura del Proyecto
