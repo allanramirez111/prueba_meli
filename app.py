@@ -21,15 +21,7 @@ from src.visualizations import plot_pca_biplot, plot_pca_clusters
 
 
 def main():
-    """
-    Función principal del tablero Streamlit.
-    """
-    st.title("Tablero de Análisis: Flags, PCA+Clustering, Relaciones y Clasificación")
-    st.write("""
-    Explora banderas de moderación, haz un PCA con variables mixtas y clustering jerárquico,
-    construye boxplots (relaciones/correlaciones), y ejecuta un mini experimento
-    de clasificación para la detección de fakes.
-    """)
+    st.title("Tablero de Análisis")
 
     @st.cache_data
     def load_dataset():
@@ -38,12 +30,13 @@ def main():
 
     df, numeric_cols, categorical_cols = load_dataset()
 
-    # Cuatro pestañas
-    tab_flags, tab_rels, tab_pca, tab_class = st.tabs([
+    # Cinco pestañas
+    tab_flags, tab_rels, tab_pca, tab_class, tab_opt = st.tabs([
         "Análisis de Banderas",
         "Relaciones / Correlaciones",
         "PCA + Clustering",
-        "Clasificación"
+        "Clasificación",
+        "Optimización"  # <- nueva
     ])
 
     with tab_flags:
@@ -57,6 +50,11 @@ def main():
 
     with tab_class:
         show_classification_tab(df, numeric_cols, categorical_cols)
+
+    # NUEVA PESTAÑA: OPTIMIZACIÓN
+    with tab_opt:
+        show_optimization_tab(df, numeric_cols, categorical_cols)
+
 
 
 def show_flags_tab(df, numeric_cols, categorical_cols):
@@ -234,45 +232,129 @@ def show_pca_clustering_tab(df, numeric_cols, categorical_cols):
 def show_classification_tab(df, numeric_cols, categorical_cols):
     """
     Pestaña para el mini experimento de clasificación (Fake).
+    Con opción de "logistic", "rf" o "xgboost" y se muestra
+    la importancia agregada por variable.
     """
     st.header("Mini Experimento de Clasificación para detectar Fakes")
 
     st.write("""
     Selecciona variables numéricas y categóricas que creas relevantes
-    para predecir si un registro es 'Fake'. Escoge un modelo
-    (Logistic, Random Forest o XGBoost) y revisa la exactitud y
-    la importancia de features.
+    para predecir si un registro es 'Fake'.
+    Modelos disponibles: Logistic, Random Forest, XGBoost.
+    Se mostrará la exactitud y la importancia agregada por variable.
     """)
 
-    # Seleccionar variables numéricas
+    # Escoger variables
     sel_num = st.multiselect("Variables numéricas", numeric_cols, ['Score','precio_usd'])
-    # Seleccionar variables categóricas
     sel_cat = st.multiselect("Variables categóricas", categorical_cols, ['site_id','Dominio_normalizado'])
+
     # Escoger modelo
     model_type = st.selectbox("Modelo", ["logistic", "rf", "xgboost"], index=0)
-    # Porción test
     test_size = st.slider("Porcentaje test", 0.1, 0.5, 0.3, 0.05)
 
     btn_classify = st.button("Entrenar Modelo")
 
     if btn_classify:
-        if not sel_num and not sel_cat:
+        if len(sel_num)==0 and len(sel_cat)==0:
             st.error("Debes seleccionar al menos una variable numérica o categórica.")
             return
+
+        from src.classification import run_fake_classification
         try:
-            # Llamamos a run_fake_classification
-            acc, df_import = run_fake_classification(
+            acc, df_import, df_import_agg = run_fake_classification(
                 df=df,
                 numeric_cols=sel_num,
                 categorical_cols=sel_cat,
                 model_type=model_type,
                 test_size=test_size
             )
+
             st.write(f"### Exactitud (test): {acc:.2%}")
-            st.write("### Importancia de Variables / Coeficientes")
-            st.dataframe(df_import)
+
+            # Mostrar solo la importancia agregada (por variable original)
+            st.write("### Importancia Agregada (por Variable Original)")
+            st.dataframe(df_import_agg)
+
+            # Opcionalmente, podríamos mostrar la tabla detallada
+            with st.expander("Ver detalle de cada subcolumna"):
+                st.dataframe(df_import)
+
         except ValueError as e:
             st.error(f"Error al entrenar modelo: {e}")
+
+def show_optimization_tab(df, numeric_cols, categorical_cols):
+    """
+    Pestaña de Optimización donde:
+      1) Se eligen variables categóricas y numéricas.
+      2) Se elige un porcentaje mínimo de cobertura (min_coverage).
+      3) Se generan TODAS las subsets (powerset) de categorías, y los umbrales
+         para las numéricas.
+      4) Se cruzan y se filtra la base, se calcula coverage y pFake.
+      5) Se determina la frontera eficiente y se grafican los resultados.
+    """
+    from src.optimizer import (
+        build_cat_subsets,
+        find_numeric_cutpoints,
+        generate_combinations_and_evaluate,
+        efficient_frontier
+    )
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
+    st.header("Optimización de Filtros con Múltiples Categorías")
+
+    st.write("""
+    Selecciona variables categóricas y numéricas, junto con un porcentaje mínimo
+    de la base que se desee conservar. Se generarán todas las combinaciones de subsets
+    de categorías (potencia) y puntos de corte numéricos (determinados por árboles de
+    decisión), se calculará la cobertura y el porcentaje de fakes resultante,
+    y se mostrará la frontera eficiente.
+    """)
+
+    selected_cat = st.multiselect("Variables Categóricas", categorical_cols, ["site_id"])
+    selected_num = st.multiselect("Variables Numéricas", numeric_cols, ["precio_usd"])
+
+    min_cov = st.slider("Porcentaje Mínimo de Cobertura", 0.0, 1.0, 0.5, 0.05)
+
+    run_opt_btn = st.button("Ejecutar Optimización")
+
+    if run_opt_btn:
+        if not selected_cat and not selected_num:
+            st.error("Selecciona al menos una variable categórica o numérica.")
+            return
+
+        # 1) Generar subsets para las variables cat
+        cat_subsets_dict = build_cat_subsets(df, selected_cat)
+
+        # 2) Determinar puntos de corte para variables num
+        #    (árbol con max_leaf_nodes=3, se pueden cambiar)
+        cutpoints_dict = find_numeric_cutpoints(df, selected_num, max_leaf_nodes=3)
+
+        # 3) Generar combos y evaluar
+        df_res = generate_combinations_and_evaluate(df, cat_subsets_dict, cutpoints_dict, min_cov)
+        if df_res.empty:
+            st.warning("No hay combinaciones que cumplan con la cobertura mínima.")
+            return
+
+        st.write(f"### Resultados de {len(df_res)} combinaciones")
+        st.dataframe(df_res.sort_values("Coverage", ascending=False))
+
+        # 4) Frontera eficiente
+        df_front = efficient_frontier(df_res, coverage_col="Coverage", fake_col="pFake")
+        st.write("### Frontera Eficiente")
+        st.dataframe(df_front)
+
+        # 5) Graficar scatter coverage vs pFake
+        fig, ax = plt.subplots(figsize=(8,5))
+        sns.scatterplot(data=df_res, x="Coverage", y="pFake", alpha=0.4, color="gray", ax=ax)
+        # resaltar la frontera en rojo
+        sns.scatterplot(data=df_front, x="Coverage", y="pFake", color="red", s=80, ax=ax)
+
+        ax.set_xlabel("Cobertura (%)")
+        ax.set_ylabel("% Fake")
+        ax.set_title("Cobertura vs. %Fake (Frontera en rojo)")
+        st.pyplot(fig)
+
 
 if __name__ == "__main__":
     st.set_page_config(layout="wide")
